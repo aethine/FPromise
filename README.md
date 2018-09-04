@@ -60,9 +60,11 @@ let pingPromise = promise (fun resolve reject) ->
 Of course, `FSPromise.Tools` provides tools so that you don't have to create your own promises:
 
 ```c#
+using FSPromise.Promises
 using FSPromise.Tools 
 
 let fetchPromise = fetch "https://github.com"
     |> !!> (fun text -> printfn "Contents of GitHub's main page: \n%s" text)
     |> catch (fun e -> printfn "An exception occurred! \n%s" e)
 ```
+`!!>` is the same as `doThen`.
