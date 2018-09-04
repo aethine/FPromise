@@ -28,11 +28,13 @@ There are alternatives to the C#-like `.Then`, `.Catch`, and even `new Promise()
 
 ```f#
 open FSPromise.Promises
-let delayedPromise = promise (fun resolve _reject ->
-                               Thread.Sleep 1000
-                               resolve "Hello, world!"
-                             )
-                     |> thenDo (fun res -> printfn "%s" res) //like .Then()
+let delayedPromise = (
+           promise (fun resolve _reject ->
+               Thread.Sleep 1000
+               resolve "Hello, world!"
+               )
+               |> thenDo (fun res -> printfn "%s" res) //like .Then()
+           )
 ```
 
 Finally, if you want to handle errors within your promise:
@@ -41,16 +43,18 @@ Finally, if you want to handle errors within your promise:
 open System.Net.NetworkInformation //For Ping and PingReply
 open FSPromise.Promises
 
-let pingPromise = promise (fun resolve reject) -> 
-    try
-        let pinger = new Ping()
-        let reply = pinger.Send "https://fsharp.org/"
-        resolve reply
-    with e -> reject e //Reject using the exn type like this
-)
-|> thenDo (fun reply -> printfn "Success! (Roundtrip time: %i ms)" reply.RoundtripTime)
-|> catch (fun e -> printfn "Error! %s" (string e))
-|> doFinally (fun () -> printfn "Done!")
+let pingPromise = (
+        promise (fun resolve reject -> 
+            try
+                let pinger = new Ping()
+                let reply = pinger.Send "https://fsharp.org/"
+                resolve reply
+            with e -> reject e //Reject using the exn type like this
+        )
+        |> thenDo (fun reply -> printfn "Success! (Roundtrip time: %i ms)" reply.RoundtripTime)
+        |> catch (fun e -> printfn "Error! %s" (string e))
+        |> doFinally (fun () -> printfn "Done!")
+    )
 ```
 
 - In `doThen`, `reply` will be the same value as the one that was used to call `resolve()`.
@@ -60,8 +64,8 @@ let pingPromise = promise (fun resolve reject) ->
 Of course, `FSPromise.Tools` provides tools so that you don't have to create your own promises:
 
 ```c#
-using FSPromise.Promises
-using FSPromise.Tools 
+open FSPromise.Promises
+open FSPromise.Tools 
 
 let fetchPromise = fetch "https://github.com"
     |> !!> (fun text -> printfn "Contents of GitHub's main page: \n%s" text)
