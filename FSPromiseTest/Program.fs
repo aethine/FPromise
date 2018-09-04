@@ -1,6 +1,6 @@
 ﻿open System
-open FSPromise.PTools
 open FSPromise.Promises
+open FSPromise.Tools
 
 [<EntryPoint>]
 let main _argv =

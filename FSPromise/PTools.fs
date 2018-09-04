@@ -2,7 +2,7 @@
 
 open Promises
 
-module PTools =
+module Tools =
     open System.Net
     open System.IO
     open System.Threading

@@ -117,6 +117,7 @@ module Promises =
     let thenDo (f: 'a -> unit) (p: Promise<'a>) = p.Then f
     let thenRet (f: 'a -> 'b) (p: Promise<'a>) = p.Then f
     let catch f (p: Promise<_>) = p.Catch f
+    let doFinally f (p: Promise<_>) = p.Finally f
 
     let (!!>) = thenDo
     let (!>>) = thenRet
