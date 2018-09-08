@@ -57,7 +57,7 @@ let pingPromise = (
     )
 ```
 
-- In `doThen`, `reply` will be the same value as the one that was used to call `resolve()`.
+- In `thenDo`, `reply` will be the same value as the one that was used to call `resolve()`.
 - In `catch`, `e` will be the exception caught by the `catch` block, and used to call `reject()`.
 - `doFinally` will be called if either `resolve()` or `reject()` was called.
 
@@ -71,4 +71,4 @@ let fetchPromise = fetch "https://github.com"
     |> !!> (fun text -> printfn "Contents of GitHub's main page: \n%s" text)
     |> catch (fun e -> printfn "An exception occurred! \n%s" e)
 ```
-`!!>` is the same as `doThen`.
+`!!>` is the same as `thenDo`.
