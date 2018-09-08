@@ -19,9 +19,11 @@ type Promise<'T> (fn: ('T -> unit) -> (exn -> unit) -> unit) =
                ) |> Task.Run
     
     member _this.Result with get () = result
-    member _this.Wait () = 
+    member this.Wait () = 
         task.Wait ()
-        result.Value
+        match this.Result with
+        | Some r -> r
+        | None -> failwith "Promise was never resolved or rejected"
 
     interface IDisposable with 
         member _this.Dispose () = task.Dispose ()
@@ -61,6 +63,14 @@ type Promise<'T> (fn: ('T -> unit) -> (exn -> unit) -> unit) =
     member this.Then (onResolve: 'T -> 'a, onReject: exn -> unit) =
         (this.Then onResolve).Catch onReject
 
+    static member FromAsync (asnc: Async<_>) =
+        new Promise<_>(
+            fun resolve reject ->
+                try resolve (Async.RunSynchronously asnc)
+                with e -> reject e
+        )
+        
+
 
 module Promises =
     open System.Threading
@@ -72,6 +82,8 @@ module Promises =
             try resolve (fn ())
             with e -> reject e
         )
+    let promiseDo fn v =
+        promiseCatch (fun () -> fn v)
     let promiseTask (tsk: Task<'a>) =
         promise (fun resolve reject ->
                         tsk.Wait ()
@@ -84,6 +96,11 @@ module Promises =
         match promise.Wait () with
         | Ok r -> r
         | Error j -> raise j
+
+    let thenDo (f: 'a -> unit) (p: Promise<'a>) = p.Then f
+    let thenRet (f: 'a -> 'b) (p: Promise<'a>) = p.Then f
+    let catch f (p: Promise<_>) = p.Catch f
+    let doFinally f (p: Promise<_>) = p.Finally f
 
     let waitAll promises = List.map (fun (p: Promise<_>) -> p.Wait ()) promises
     let all (promises: Promise<_> list) =
@@ -99,8 +116,10 @@ module Promises =
         (fun resolve reject ->
             promises
             |> List.map (fun (p: Promise<_>) -> 
-                p.Then(fun t -> resolve t).Catch(fun e -> reject e)
-                ) |> ignore
+                    p 
+                    |> thenDo (fun t -> resolve t)
+                    |> catch (fun e -> reject e)
+               ) |> ignore
         ) |> promise
     let timeout (ms: int) (prom: Promise<_>) =
         promise (fun resolve reject -> 
@@ -114,10 +133,7 @@ module Promises =
             | Error j -> reject j
         )
 
-    let thenDo (f: 'a -> unit) (p: Promise<'a>) = p.Then f
-    let thenRet (f: 'a -> 'b) (p: Promise<'a>) = p.Then f
-    let catch f (p: Promise<_>) = p.Catch f
-    let doFinally f (p: Promise<_>) = p.Finally f
-
+    let combine (fnA: 'a -> 'b) (fnB: ('a -> 'b) -> 'a -> 'd) = fnB fnA
     let (!!>) = thenDo
     let (!>>) = thenRet
+    let (|>>) = combine

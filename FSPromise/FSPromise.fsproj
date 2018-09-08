@@ -6,7 +6,8 @@
 
   <ItemGroup>
     <Compile Include="Promises.fs" />
-    <Compile Include="PTools.fs" />
+    <Compile Include="Tools.fs" />
+    <Compile Include="Json.fs" />
   </ItemGroup>
 
 </Project>
