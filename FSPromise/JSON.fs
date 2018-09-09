@@ -26,6 +26,8 @@ module Json =
     let (|In|_|) (lis: 'a list) (el: 'a) =
         if List.contains el lis then Some el
         else None
+    let private (*) (str: string) (amt: int) =
+        [for _ in 1..amt -> str] |> List.fold (fun acc i -> acc + string i) "" 
 
     let charsOf (str: string) = List.ofArray (str.ToCharArray ())
     let ofChars (chrs: char list) = List.fold (fun acc i -> acc + string i) "" chrs
@@ -50,7 +52,7 @@ module Json =
                 | _ when until head -> (List.rev current, tail)
                 | cont -> loop (cont::current) tail
             | [] -> failwith "Scanned to the end"
-        loop [] col
+        loop [] col 
     let scanGroup opn cls col =
         let rec loop current toGo level =
             match level with
@@ -64,6 +66,14 @@ module Json =
                     | c -> loop (c::current) tail lvl
                 | [] -> failwith "Scanned to the end"
         loop [] col 1
+    let scanTwo until col =
+        let rec loop current toGo =
+            match toGo with
+            | a::b::tail -> 
+                if until (a, b) then (List.rev current, toGo)
+                else loop (a::current) (b::tail)
+            | _ -> failwith "Scanned to the end"
+        loop [] col
 
     let readString (str: string) =
         let rec loop escapeCharacter chrs =
@@ -95,7 +105,7 @@ module Json =
             match chrs with
             | head::tail ->
                 match head with
-                | '"' -> "\\" + loop tail
+                | '"' -> "\\\"" + loop tail
                 | '\\' -> "\\\\" + loop tail
                 | '/' -> "\\/" + loop tail
                 | '\b' -> "\\b" + loop tail
@@ -111,42 +121,55 @@ module Json =
     let writeNumber num =
         sprintf "%g" num
 
-    let rec writeObject (obj: JsonObject) =
+    
+    let rec private writeObjectHelper (obj: JsonObject) amt =
         obj
-        |> joinMap (fun (k, v) -> sprintf "%s : %s" k (writeValue v)) ", \n"
+        |> joinMap (fun (k, v) -> sprintf "%s%s : %s" ("    " * amt) k (writeValue v amt)) ", \n"
         |> sprintf "{\n%s\n}"
-    and writeValue value =
+    and writeValue value amt =
         match value with
         | JString s -> writeString s
         | JNumber n -> writeNumber n
-        | JObject o -> writeObject o
+        | JObject o -> writeObjectHelper o (amt + 1)
         | JArray a -> writeArray a
         | JTrue -> "true"
         | JFalse -> "false"
         | JNull -> "null"
     and writeArray (arr: JsonValue array) =
         arr 
-        |> join writeValue ", "
+        |> join (fun a -> writeValue a 0) ", "
         |> sprintf "[%s]"
+
+    let writeObject o = writeObjectHelper o 1
     
-    let parseObjElements (str: string) =
-        //When level = 0, expecting : or , or end
-        //When level > 0, inside string or other object
-        let loop n v level current toGo =
-            match toGo with
-            | head::tail -> 
+    //let rec parseObjElements (str: string) =
+    //    let rec loop n v toGo =
+    //        match toGo with
+    //        | head::tail -> 
+    //            match head with
+    //            | In whitespace _ -> loop n v tail
+    //            | '"' ->
+    //                let str, left = scanTwo (fun (a, b) -> a <> '\\' && b = '"') tail
+    //                loop str [] left
+    //            | ':' ->
+    //                if n <> [] then loop n v tail
+    //                else Error "Expected name at :"
+    //            | '{' ->
+    //                match n with
+    //                | [] -> Error "Expected property name"
+    //                | _ -> 
+                        
 
-            | [] -> 
-                if level = 0 then Ok current
-                else Error "Reached end of object while parsing"
-        loop "" "" 0 [] (charsOf str)
+    //        | [] -> Ok (n, v)
+    //    loop [] [] (charsOf str)
 
-    let rec readObject (str: string) =
-        match str with
-        | Prefix "{" rest -> 
-            let sub = scanGroup (fun c -> c = '{') (fun c -> c = '}') (charsOf rest)
-            let obj = fst sub |> ofChars
-            
-        | err -> Error "Json object must start with opening {"
+    //and readObject (str: string) =
+    //    match str with
+    //    | Prefix "{" rest -> 
+    //        scanGroup (fun c -> c = '{') (fun c -> c = '}') (charsOf rest)
+    //        |> fst
+    //        |> ofChars
+    //        |> parseObjElements
+    //    | err -> Error "Json object must start with opening {"
     
     

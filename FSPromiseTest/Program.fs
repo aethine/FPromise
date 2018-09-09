@@ -18,7 +18,13 @@ let main _argv =
     let writeValPromise = writeObject |>> promiseDo
     
     
-    use written = writeValPromise (JsonObject [("A", JTrue); ("B", JFalse)])
+    use written = JsonObject [
+                                ("A", JNull)
+                                ("B", JNumber 100.0)
+                                ("C", JString "Hewwo?? \\\"")
+                                ("D", JObject (JsonObject [("DA", JNull); ("DB", JNull)]))
+                             ] 
+                  |> writeValPromise
     match written.Wait () with
     | Ok value -> printfn "%s" value
     | Error e -> printfn "ERROR: %s" (string e)
