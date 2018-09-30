@@ -80,20 +80,22 @@ module Promises =
                         | null -> resolve tsk.Result
                         | e -> reject e
                    ) 
-    let await (promise: Promise<_>) = 
-        match promise.Wait () with
-        | Ok r -> r
-        | Error j -> raise j
+    let await (promise: Promise<_>) = promise.Wait ()
 
     let waitAll promises = List.map (fun (p: Promise<_>) -> p.Wait ()) promises
     let all (promises: Promise<_> list) =
         promise (fun resolve reject -> 
-            let mutable list = []
-            for p in promises do
-                match p.Wait () with
-                | Ok r -> list <- r::list
-                | Error j -> reject j
-            resolve (List.rev list)
+            let rec loop els =
+                match els with
+                | head::tail ->
+                    match await head with
+                    | Ok ok -> ok::loop tail
+                    | Error e -> 
+                        reject e
+                        loop []
+                | [] -> []
+            
+            loop promises |> resolve
         )
     let race promises = 
         (fun resolve reject ->

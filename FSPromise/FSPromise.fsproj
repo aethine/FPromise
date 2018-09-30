@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <Compile Include="Promises.fs" />
+    <Compile Include="Promiser.fs" />
     <Compile Include="PTools.fs" />
   </ItemGroup>
 
