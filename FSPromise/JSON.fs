@@ -26,8 +26,8 @@ module Json =
     let (|In|_|) (lis: 'a list) (el: 'a) =
         if List.contains el lis then Some el
         else None
-    let private (*) (str: string) (amt: int) =
-        [for _ in 1..amt -> str] |> List.fold (fun acc i -> acc + string i) "" 
+    let private ( * ) (str: string) (amt: int) =
+        [for _ in 1..amt -> str] |> List.fold (fun acc i -> acc + str) "" 
 
     let charsOf (str: string) = List.ofArray (str.ToCharArray ())
     let ofChars (chrs: char list) = List.fold (fun acc i -> acc + string i) "" chrs
@@ -122,15 +122,15 @@ module Json =
         sprintf "%g" num
 
     
-    let rec private writeObjectHelper (obj: JsonObject) amt =
+    let rec private writeObjectHelper (obj: JsonObject) indent =
         obj
-        |> joinMap (fun (k, v) -> sprintf "%s%s : %s" ("    " * amt) k (writeValue v amt)) ", \n"
-        |> sprintf "{\n%s\n}"
-    and writeValue value amt =
+        |> joinMap (fun (k, v) -> sprintf "%s%s : %s" ("    " * indent) k (writeValue v indent)) ", \n"
+        |> sprintf "{\n%s\n%s}" ("    " * indent)
+    and writeValue value indent =
         match value with
         | JString s -> writeString s
         | JNumber n -> writeNumber n
-        | JObject o -> writeObjectHelper o (amt + 1)
+        | JObject o -> writeObjectHelper o (indent + 1)
         | JArray a -> writeArray a
         | JTrue -> "true"
         | JFalse -> "false"
